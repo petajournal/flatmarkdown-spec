@@ -60,6 +60,7 @@ page
   - underline
   - wikilink
   - multiline_block_quotes
+- 各拡張構文の例は[example_ja.md](example_ja.md)を参照。
 
 ## ブロックによる項目の区切り
 

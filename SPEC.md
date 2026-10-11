@@ -60,6 +60,7 @@ page
   - underline
   - wikilink
   - multiline_block_quotes
+- See [example.md](example.md) for examples of each extension.
 
 ## Item Delimiters via Blocks
 
