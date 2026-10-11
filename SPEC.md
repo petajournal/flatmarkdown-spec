@@ -73,6 +73,32 @@ page
   - For example, two consecutive list items form a single list block, with or without a blank line between them. So they are one item.
 - All items in a document keep their order in the outline.
 
+## Lines That Produce No Block
+
+- Markdown has lines that the parser reads but that produce no block.
+  - Link reference definitions (`[ref]: /url`). The parser only records them in its reference table and leaves no block.
+  - Unreferenced footnote definitions (`[^1]: text`). When the body has no `[^1]` reference, the parser removes the definition.
+- These lines belong to no block. However, they must not be lost after parsing.
+- These lines are appended to the body of the previous item.
+  - Reference definitions and footnote definitions are normally written after the paragraph that uses them. Keeping them in the previous item lets the reference resolve even when the item body is parsed alone.
+  - When the lines sit between a metadata line and its block, they are prepended to the body of that metadata's item. Metadata belongs to the block after it, not to the item before it.
+  - When the lines are at the start of the document and there is no previous item, they are prepended to the body of the next block. When the next line is a metadata line, the lines form one item with omitted metadata.
+- Example
+
+```markdown
+See [site][s].
+
+[s]: https://example.com
+
+Paragraph 2
+
+[^1]: unreferenced
+```
+
+- The document above becomes two items.
+  - The body of the first item is three lines: `See [site][s].`, a blank line, and `[s]: https://example.com`. `[site][s]` becomes a link even when the body is parsed alone.
+  - The body of the second item is three lines: `Paragraph 2`, a blank line, and `[^1]: unreferenced`.
+
 # Metadata
 
 ## Position
