@@ -10,7 +10,7 @@
 
 # Flat Markdownが扱う文書（ページ）の構造
 
-```
+```text
 page
 ├── page-metadata?
 └── item[]
@@ -170,7 +170,7 @@ Paragraph 1
 
 画像を始めとするメディアの埋め込みフォーマット
 
-```
+```markdown
 ![alt](img.png#w=300&h=240)
 ![alt](video.mp4#w=640&autoplay)
 ![alt](https://youtube.com/watch?v=xxx#w=640&start=30)
