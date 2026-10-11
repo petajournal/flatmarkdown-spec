@@ -1,221 +1,245 @@
-Flat Markdown defines clear rules for treating ordinary Markdown documents as items in an outliner.
+# Flat Markdown Specification v0.2
 
-# Flat Markdown Policy
+# Overview
 
-- Item boundaries should be visually easy to distinguish and easy to edit in a plain text editor.
-- All documents written in standard GitHub Flavored Markdown are accepted.
-- Extended Markdown syntax is supported.
-- Line breaks are interpreted in a custom way.
+- Flat Markdown is a note format for outliners. It uses Markdown delimited by blocks.
+- The smallest unit in an outliner is a single list item.
+- An outline is a nested document. A list item may contain another list.
+- Markdown is designed for ordinary documents. It uses indentation to express an outline. Deep indentation makes items hard to read and write.
+- Flat Markdown expresses an outline without indentation, so items are easy to read and write. Item boundaries match Markdown block boundaries, so items are easy to tell apart visually.
 
 # Document (Page) Structure
 
 ```
 page
-├── page-metadata[]
+├── page-metadata?
 └── item[]
-    ├── body
-    └── item-metadata[]
+    ├── item-metadata?
+    │   ├── level
+    │   ├── id?
+    │   └── property[]
+    └── body
 ```
 
+`?` marks an optional element. `[]` marks a list of zero or more elements.
+
 - **Page**
-  - Consists of a list of page metadata (page-metadata) and a list of items (item).
+  - Consists of page metadata (page-metadata) and a list of items (item).
   - Page metadata
+    - Optional.
     - The region enclosed by `---` at the top of the document is interpreted as YAML front matter and treated as page metadata.
+    - Front matter is not an item.
   - Items
     - Outliner items. Written in Markdown.
 
 - **Item**
-  - Consists of a body and a list of item metadata (item-metadata).
+  - Consists of item metadata (item-metadata) and a body.
+  - Item metadata
+    - Optional.
+    - Written as a single-line HTML comment directly above the body.
+    - Holds an indent level (level), an ID (id), and a list of properties (property).
+    - The level is required. The ID is optional. The list of properties may be empty.
   - Body
     - Written in Markdown.
-  - Item metadata
-    - Written in `<!-- HTML comment -->` format.
+
+# Parsing Rules
+
+## Available Syntax
+
+- GitHub Flavored Markdown and the following comrak extensions are available.
+  - footnote
+  - alert
+  - subtext
+  - highlight
+  - superscript
+  - subscript
+  - spoilered_text
+  - shortcode
+  - math
+  - hashtag
+  - underline
+  - wikilink
+  - multiline_block_quotes
+
+## Item Delimiters via Blocks
+
+- Each block element at the shallowest level is treated as an outline item.
+  - Blocks nested inside a block are simply part of the body of the outer block.
+  - For example, a list parsed as a single `<ul>` or `<ol>` is one item, including any nested lists.
+  - Multiple paragraphs inside a block quote are also one item.
+- Block boundaries are decided by the Markdown parser.
+  - A blank line often becomes a block boundary. However, a blank line is not a condition for an item boundary.
+  - For example, a paragraph written directly after a heading with no blank line is still a separate block. So it is a separate item.
+  - For example, two consecutive list items form a single list block, with or without a blank line between them. So they are one item.
+- All items in a document keep their order in the outline.
+
+# Metadata
+
+## Position
+
+- Metadata is written as a single-line comment directly above a block at the shallowest level (an outline item).
+
+```markdown
+<!-- @ 2026-09-26-18-14-47-32W15WT -->
+
+# Heading 1
+
+Paragraph 1
+
+<!-- @@ 2026-09-26-18-15-30-6VZSYB4 -->
 
 
-## Item Delimiters via Blank Lines
+<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan="2026-09-28" -->
+- [ ] Task1
+```
 
-- One or more blank lines in a Markdown document are interpreted as item delimiters.
-  - Essentially, a paragraph in Markdown corresponds to an item.
-- Multiple consecutive blank lines are treated as a single delimiter.
-- Blank lines within an item body are not permitted, with the sole exception of blank lines inside code fences.
-- One or more trailing blank lines at the end of a document are ignored.
-- The first blank line after a front matter block marks the end of the front matter and is not treated as an item delimiter.
+- Blank lines between a metadata line and its body are ignored (the blank line above `Heading 1` in the example).
+- A block without a metadata line is treated as an item whose metadata is omitted (`Paragraph 1` in the example).
+- If only blank lines follow a metadata line until the next metadata line or the end of the document, that metadata line is treated as one item with an empty string as its body (the blank lines between `2026-09-26-18-15-30-6VZSYB4` and `2026-09-27-15-00-16-W3N8ASY` in the example).
 
-## Items
+## Syntax
 
-Each item may contain any GFM content as its body.
+```markdown
+<!-- @@ ID key1="value1" key2="value2" -->
+```
 
-### Differences from GFM
-
-#### Blank Line Handling
-
-- A blank-line paragraph is represented by a line containing only `<br />`.
-- Intentional blank lines within an item:
-  - Blank lines inside a code fence are treated as blank lines. They are not treated as item delimiters.
-  - All other intentional blank lines must be represented by a line containing only `<br />`, to remain visually distinguishable.
-- The parser automatically interprets any line outside a code fence that consists entirely of characters with the Unicode White_Space property (empty lines, space-only lines, full-width-space-only lines, etc.) as a `<br />` line.
-  - Whitespace means any character with the Unicode White_Space property, including the ideographic space (U+3000).
-
-#### Line Break Handling
-
-- All newline characters are treated as hard line breaks (`<br />`).
-- GFM Hard line breaks syntax (two or more trailing spaces, or a trailing backslash) is ignored.
-
-#### Extended Syntax
-- footnote
-- alert
-- subtext
-- highlight
-- superscript
-- subscript
-- spoilered_text
-- shortcode
-- math
-- hashtag
-- underline
-- wikilink
-
-### Item Metadata
-
-The lines from after the final newline of the body up to the next blank line or the end of the page constitute the metadata section.
-
-#### Metadata Types
-
-Metadata is broadly divided into two types: ID and properties.
-
+- A metadata line starts with `<!-- @` at the beginning of the line and ends with `-->`. No leading whitespace is allowed.
+- A metadata line is complete on a single line. A comment spanning multiple lines is not metadata.
+- Elements are separated by ASCII spaces.
+- The only required element is one or more consecutive `@` characters.
+- The number of `@` characters indicates the indent level. The shallowest level is `@`. An item indented one step to the right is `@@`.
+- An item whose metadata is omitted is treated the same as `@`. In other words, when ordinary Markdown is interpreted under the Flat Markdown rules, every item is at the shallowest level.
 - ID
-  - Mandatory metadata. Used for cross-referencing and synchronisation of data.
+  - Optional element. Used for cross-references and synchronization.
+  - Placed directly after the `@` characters.
+  - The format is HMTID. https://github.com/sosuisen/hmtid
+    - A 27-character ID separated by hyphens, including the date and time.
 - Properties
-  - Key=value properties. Includes the item's collapsed state (collapsed), task details, and any other arbitrary key-value pairs.
+  - Optional elements. Zero or more may be listed.
+  - Written in `key="value"` form. Placed after the ID, or after the `@` characters when there is no ID.
+  - A key must not contain whitespace, `=`, or `"`.
+  - A value is enclosed in double quotes. This allows a value to contain spaces. Metadata is not meant to be written by hand, so a few extra symbols are acceptable.
+  - A `"` inside a value is escaped as `\"`. A `\` is escaped as `\\`.
+  - A value must not contain `-->`.
+  - The meaning of each key is defined by the application. Examples include the collapsed state of an item, task details, or any other key-value pair.
+- Metadata can be written by hand, but it is designed for automatic input or input through a GUI.
 
-The indentation level of an item in the outline is stored as an item property.
-- The default depth is level 1. One indent to the right is written as `<!-- level=2 -->`.
-- Level 1 is the default, so the level property may be omitted.
-- In other words, when a standard Markdown document is interpreted under Flat Markdown rules, all items are at level 1 (no indentation) because no level property is present.
+## Invalid Metadata
 
-#### Metadata Syntax
-
-- Each type of metadata is written on its own line.
-- Metadata is written inside HTML comments `<!-- -->`. These will not be displayed when converted to HTML.
-- A valid metadata HTML comment must be a single-line comment starting at the beginning of the line, and must match either the `<!-- key=value -->` property pattern or the `<!-- HMTID -->` pattern. HTML comments that do not match are treated as body content.
-- HMTID
-  - https://github.com/sosuisen/hmtid
-  - A 27-character ID in hyphen-delimited format that also delimits date and time components.
-- Metadata can be written by hand, but GUI-based input is the intended workflow.
-
-### Notes
-- To minimise exceptions related to blank lines, extended block constructs such as multiline blockquotes (`>>>`) are not supported.
+- The following comments are not metadata. They are treated as body text.
+  - A comment that does not start with `<!-- @`.
+  - A comment that starts with `<!-- @` but does not follow the syntax above.
+  - A comment spanning multiple lines.
 
 # Characteristics of Flat Markdown
 
 - Visual clarity
-  - Items separated by blank lines can be distinguished at a glance.
+  - Item boundaries are the same as Markdown block boundaries. Anyone who can read Markdown can tell items apart naturally.
+  - When a metadata line sits at the top of an item, the start of the item is even clearer.
 - Compatibility
-  - Markdown documents written as ordinary pages (e.g. blog posts) can be handled by the outliner.
-  - Because it is standard Markdown, it can be edited and rendered by any Markdown tool.
-- Ease of data transformation
-  - Compatible with many tools that publish Markdown data to web pages and other formats.
-  - Code to split items is straightforward to write.
-  - If you prefer to represent outline items as a Markdown list tree, a tool that reads Flat Markdown and converts it to a Markdown list tree is trivially easy to build. An official tool is planned, but with today's AI coding assistance you could write it yourself in under three minutes.
+  - Ordinary Markdown documents, such as blog posts, can be handled by an outliner.
+  - Because it is standard Markdown, it can be edited and displayed by any Markdown tool. Metadata is an HTML comment, so it does not get in the way of display.
+- Ease of data conversion
+  - Compatible with the many tools that publish Markdown data to web pages and other formats.
+  - Splitting items can be left to the Markdown parser. There is no need to write a custom parser.
+  - If you prefer to express outline items as a Markdown list tree, a tool that converts Flat Markdown into a Markdown list tree is easy to build.
 - No-indentation philosophy
-  - The obvious way to represent an outliner tree in Markdown is as a list tree. However, that approach was not adopted.
-  - When editing items by hand, list trees make it easy to get the leading whitespace count wrong, and every line must carry the same number of leading spaces. Heavy indentation also pushes items off-screen on narrow displays such as smartphones.
-  - Markdown is a general-purpose markup language and is not necessarily well-suited to expressing outliner items. Nevertheless, Markdown has value as an interchange format in the modern era.
+  - The first idea that comes to mind for expressing an outliner tree in Markdown is a Markdown list tree. It was not adopted.
+  - When editing items by hand, it is easy to miscount the leading spaces in a list tree, and every line needs the same number of spaces. Moreover, deep indentation pushes items off the screen on narrow displays such as smartphones. This is inconvenient.
+  - Markdown is a general-purpose markup language. It is not necessarily suited to expressing outliner items. However, Markdown has value as an intermediate language in the modern era.
   - Removing indentation solves all of these problems.
-  - Removing indentation also introduced new advantages:
-    - Diffs are small when indentation changes — only the level property line is affected.
-    - Adding a metadata section to items in a Markdown list tree produces a visually cluttered result. With blank-line delimiters, item boundaries remain clearly visible even after metadata is added.
-  - The design background is outliners with namespaces and page units, such as Roam Research and Logseq.
-    - Because pages carry their own hierarchy, indentation does not become as deep as it would in a single-large-tree outliner like Workflowy.
-    - Shallower indentation reduces the problems caused by the visual absence of indentation in plain Markdown.
+  - Removing indentation also brought new advantages.
+    - First, the document diff is small when the indentation changes. Only the number of `@` characters in the metadata line changes.
+    - When adding metadata to items, a Markdown list tree looks quite confusing. With block delimiters, item boundaries remain clearly distinguishable even after metadata lines are added.
+  - The background assumes outliners with namespaces and page units, such as Roam Research and Logseq.
+    - Because pages have hierarchy, indentation does not become as deep as in outliners with a single large tree, such as Workflowy.
+    - With shallow indentation, the problems of having no visual indentation in Markdown are mitigated.
 
 # Flat Markdown in PetaJournal
 
 ## Metadata
 
-The order of metadata is not defined by the specification, but journal-server serialises it in the following order:
-  - ID
-  - Indent level
-  - Other properties
+- journal-server writes a metadata line for every item. An ID is always assigned.
+- The order of properties is not defined by the specification, but journal-server serializes them in a fixed order.
 
 ## Task List Interpretation
 
-- For items beginning with the GFM task list syntax `- [ ] `, PetaJournal treats the entire item as a task and replaces the bullet with a checkbox.
+- For items starting with a GFM task list `- [ ]`, PetaJournal treats the entire item as a task and replaces the bullet with a checkbox.
 
-## Embed
+## Embedding
 
-Media embed format for images and other media:
+Embedding format for media, including images:
+
 ```
 ![alt](img.png#w=300&h=240)
 ![alt](video.mp4#w=640&autoplay)
 ![alt](https://youtube.com/watch?v=xxx#w=640&start=30)
 ![alt](doc.pdf#page=3&w=800)
 ```
+
 The server-side parser adds an embed node to the AST and returns it. Rendering is the responsibility of the frontend.
 
 ## Tags
 
 - Can be placed anywhere in the item body. `#tagname`
-- Page tags are set as Front Matter properties.
-- Valid characters:
-  - Unicode alphanumerics
-    - Based on Rust's `char::is_alphanumeric()`
+- Page tags are set as properties in the Front Matter.
+- Only the following characters are valid:
+  - Unicode alphanumeric characters
+    - Based on Rust's char::is_alphanumeric()
     - Kanji: タグ, 日記 — Letter (Lo) → included
     - Hiragana: たぐ — Letter (Lo) → included
     - Katakana: タグ — Letter (Lo) → included
     - Full-width digits: １２３ — Digit (Nd) → included
-    - ASCII alphanumerics: abc, 123 — included
+    - Half-width alphanumerics: abc, 123 — included
     - Punctuation is not included.
   - Three symbols: `-` `_` `/`
-  - `/` is not permitted as the first or last character of a tag name.
+  - `/` is not allowed at the beginning or end of a tag name.
 - Tag start conditions
-  - `#` at the beginning of a string or immediately after a half-width space (U+0020)
-    - ==Note: Logseq does not require a preceding space, so there is an intentional incompatibility here.==
-  - Can be escaped with a backslash: `\#`
+  - `#` at the beginning of a line or following a half-width space.
+    - ==Note: Logseq does not require a half-width space, so this is not compatible.==
+  - Can be escaped with a backslash. `\#`
 - Tag end conditions
-  - The tag ends at the first character that is not a valid tag character.
-    - For `#mytag。next`, the tag is `mytag`.
-    - Japanese punctuation, `()`, `[]`, etc. naturally terminate the tag.
-    - Whitespace and end of string also terminate the tag.
+  - The rule is simply: the tag ends at any character that is not an allowed character.
+    - In `#mytag。next`, the tag is mytag.
+    - Japanese punctuation, (), [], etc. naturally terminate the tag.
+    - Whitespace characters and the end of the string also terminate the tag.
 - Tag semantics
-  - Behaviour is the same as Logseq.
-  - Equivalent to a Wikilink; the link target is a page.
+  - Behavior is the same as Logseq. That is, a tag name is equivalent to a Wikilink, and the link target is a page.
 
 ## Handling in Markdown Files
 
-Conversion rule `tag <---> Markdown link`
+Conversion rule: `Tag <---> Markdown link`
 
-- Link resolution ON:
+- When link resolution is ON
   - `#tagname <---> [#tagname](../tagname.md)`
-- Link resolution OFF:
-  - No conversion.
-
+- When link resolution is OFF
+  - No conversion
 
 # Wikilink Syntax
 
 - Link to a page
-  - Wikilink syntax: `[[full/path/to/page]]`
-  - With a label: `[[full/path/to/page|label]]`
+  - Wikilink syntax `[[full path of page name]]`
+  - With a label `[[full path of page name|label]]`
 - Link to a block
-  - `[[full/path/to/page#id]]`
-  - With a label: `[[full/path/to/page#id|label]]`
+  - `[[full path of page name#id]]`
+  - With a label `[[full path of page name#id|label]]`
 
 ## Handling in Markdown Files
 
-Conversion rule `wikilink <---> Markdown link`
+- Conversion rule: `Wikilink <---> Markdown link`
 
-- Link resolution ON:
-  - When writing to Markdown files, wikilinks are converted to Markdown links rather than being stored as wikilinks.
-  - General Markdown tools cannot handle wikilink syntax.
-  - In other words, write in wikilink syntax within the app; the serialised data uses Markdown links.
-  - `[[full/path/to/page]] <---> [full/path/to/page](../full/path/to/page.md)`
-  - `[[full/path/to/page|label]] <---> [label](../full/path/to/page.md)`
-- Link resolution OFF:
-  - No conversion.
-
+- When link resolution is ON
+  - When exporting to Markdown, convert Wikilinks to Markdown links before saving.
+  - This is because general Markdown tools cannot handle Wikilinks.
+  - In other words, write Wikilinks in the app, but serialize data as Markdown links.
+  - `[[full path of page name]] <---> [full path of page name](../full path of page name.md)`
+  - `[[full path of page name|label]] <---> [label](../full path of page name.md)`
+- When link resolution is OFF
+  - No conversion
 
 ## Path Handling
-- Obsidian allows the folder path to be omitted when no other file has the same name.
-- Full paths (as in Logseq) are simpler and preferred.
-  - Therefore, if a folder changes, all links must be rewritten.
-  - This also makes conversion between wikilinks and Markdown links straightforward.
+
+- Obsidian allows omitting the folder path when there is no other file with the same name.
+- Using full paths like Logseq seems simpler and better.
+  - Therefore, when a folder changes, all links are rewritten.
+  - This also makes conversion between Wikilinks and Markdown links easier.
