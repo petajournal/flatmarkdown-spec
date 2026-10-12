@@ -238,7 +238,10 @@ The server-side parser adds an embed node to the AST and returns it. Rendering i
 Conversion rule: `Tag <---> Markdown link`
 
 - When link resolution is ON
-  - `#tagname <---> [#tagname](../tagname.md)`
+  - `#tagname <---> [#tagname](relative path to the tag page)`
+  - The link target is the page whose full path is the tag name. The relative path is built the same way as in "Handling in Markdown Files" under "Wikilink Syntax".
+  - Example: `#test` written in `journals/2026-10-12.md` becomes `[#test](../docs/test.md)`.
+  - When reading, a Markdown link whose label is `#` followed by the full path of the page is turned back into a tag.
 - When link resolution is OFF
   - No conversion
 
@@ -259,8 +262,18 @@ Conversion rule: `Tag <---> Markdown link`
   - When exporting to Markdown, convert Wikilinks to Markdown links before saving.
   - This is because general Markdown tools cannot handle Wikilinks.
   - In other words, write Wikilinks in the app, but serialize data as Markdown links.
-  - `[[full path of page name]] <---> [full path of page name](../full path of page name.md)`
-  - `[[full path of page name|label]] <---> [label](../full path of page name.md)`
+  - The target of the Markdown link is the path of the target file relative to the file being written.
+    - This lets the exported file work on its own in a general Markdown tool.
+    - Files live in several folders such as `docs/` and `journals/`, so a fixed form like `../full path.md` cannot be resolved.
+  - `[[full path of page name]] <---> [full path of page name](relative path)`
+  - `[[full path of page name|label]] <---> [label](relative path)`
+  - `[[full path of page name#id|label]] <---> [label](relative path#id)`
+  - When the relative path contains a character that is not allowed in a Markdown link target, such as a space, wrap it in `<` and `>`. Example: `[My Page](<../My Page.md>)`
+  - Example: with files placed as `docs/<full path>.md` and `journals/<date>.md`, `[[Projects/oecha/prd]]` written in `docs/Projects/oecha/index.md` becomes `[Projects/oecha/prd](prd.md)`. `[[2026-10-12]]` in the same file becomes `[2026-10-12](../../../journals/2026-10-12.md)`.
+  - When reading, the relative path is resolved from the location of the file and turned back into the full path of the page.
+    - When the label equals the full path, the result is a Wikilink without a label.
+    - A link that does not resolve to a page file (an external URL, a file that is not a page, and so on) is kept as a Markdown link.
+  - Text inside code blocks and inline code is never converted in either direction.
 - When link resolution is OFF
   - No conversion
 
