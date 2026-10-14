@@ -78,10 +78,11 @@ page
 
 - Markdown has lines that the parser reads but that produce no block.
   - Link reference definitions (`[ref]: /url`). The parser only records them in its reference table and leaves no block.
-  - Unreferenced footnote definitions (`[^1]: text`). When the body has no `[^1]` reference, the parser removes the definition.
+  - Footnote definitions (`[^1]: text`). A referenced definition is a block for the Markdown parser. Flat Markdown still treats it as a line without a block, so that every footnote definition is handled the same way.
 - These lines belong to no block. However, they must not be lost after parsing.
 - These lines are appended to the body of the previous item.
   - Reference definitions and footnote definitions are normally written after the paragraph that uses them. Keeping them in the previous item lets the reference resolve even when the item body is parsed alone.
+  - A footnote reference and its definition may also be in different items. A reference without a definition and a definition without a reference are both kept when the body is parsed alone, so they can be linked by label across items.
   - When the lines sit between a metadata line and its block, they are prepended to the body of that metadata's item. Metadata belongs to the block after it, not to the item before it.
   - When the lines are at the start of the document and there is no previous item, they are prepended to the body of the next block. When the next line is a metadata line, the lines form one item with omitted metadata.
 - Example

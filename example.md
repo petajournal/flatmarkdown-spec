@@ -18,9 +18,9 @@ Flat Markdown uses block boundaries[^1].
 ```
 
 - The footnote reference is inline.
-- The footnote definition is a line that produces no block. It is appended to the end of the previous item's body.
+- The footnote definition is treated as a line that produces no block. It is appended to the end of the previous item's body.
 - The example above becomes one item. The footnote still resolves when the body is parsed alone.
-- An unreferenced footnote definition is appended to the previous item in the same way.
+- The reference and the definition may also be in different items. Both are kept when a body is parsed alone, so a reference in one item links to a definition in a later item, such as a list of definitions at the end of the page.
 
 ## alert
 
